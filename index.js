@@ -109,9 +109,26 @@ app.get('/users/:email', async (req, res) => {
 // UPDATE(PUT) - Update a user by ID
 app.put('/users/:id', async (req, res) => {
     const client = await pool.connect();
+    const id = req.params.id;
+    const { username, phone, gender, birth } = req.body;
 
     try {
+        const result = await client.query(`
+            UPDATE users
+                SET username = $1, phone = $2, gender = $3, birth = $4
+                    WHERE id = $5
+            RETURNING *
+        `, [username, phone, gender, birth, id])
 
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.status(200).json({
+            status: 'Success',
+            message: `User's profile updated successfully`, 
+            updatedData: result.rows[0]
+        });
     } catch (err) {
         res.status(500).json({
             error: 'Internal Server Error',
@@ -129,7 +146,21 @@ app.delete('/users/:id', async (req, res) => {
     const client = await pool.connect();
 
     try {
+        const result = await client.query(`
+            DELETE FROM users
+                WHERE id = $1
+            RETURNING *
+        `, [req.params.id]);
 
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.status(200).json({
+            status: 'Success',
+            message: 'User deleted successfully', 
+            deletedData: result.rows[0]
+        });
     } catch (err) {
         res.status(500).json({
             error: 'Internal Server Error',
@@ -142,10 +173,14 @@ app.delete('/users/:id', async (req, res) => {
 
 
 
+// ====== Follow ==============================================>
+
+
+    
 // ====== API Listen ==============================================>
 
 app.get('/', (req, res) => {
-    res.send('Welcome to Futura API!');
+    res.send('Welcome to the FUTURA API!');
 });
 
 app.listen(3000, () => {

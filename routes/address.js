@@ -43,7 +43,7 @@ router.get('/users/:id/address', async (req, res) => {
         res.json({
             status: 'Success',
             message: `User's address retrieved successfully`,
-            data: result.rows[0]
+            data: result.rows
         });
     } catch (err) {
         res.status(500).json({

@@ -30,7 +30,7 @@ router.get('/products', async (req, res) => {
 });
 
 // Get Product Categories (Suitable? for product categories)
-router.get('/categories/:category_id/products', async (req, res) => {
+router.get('/products?category=:category_id', async (req, res) => {
     const client = await pool.connect();
     const {category_id} = req.params.id;
 

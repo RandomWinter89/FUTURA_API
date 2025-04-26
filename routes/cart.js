@@ -38,7 +38,7 @@ router.get('/users/:id/cart', async (req, res) => {
     try {
         const result = await client.query(`
             SELECT * FROM shopping_cart WHERE user_id = $1
-        `, [id, username, email, phone, gender, birthdate]);
+        `, [id]);
 
         res.json({
             status: 'Success',
@@ -155,7 +155,7 @@ router.delete('/cart/:cart_id/removeProduct', async (req, res) => {
         res.json({
             status: 'Success',
             message: 'Item remove from cart successfully',
-            data: result.rows[0]
+            data: result.rows
         });
     } catch (err) {
         res.status(500).json({
@@ -181,8 +181,7 @@ router.delete('/cart/:cart_id/clear', async (req, res) => {
 
         res.json({
             status: 'Success',
-            message: 'All items removed from cart successfully',
-            data: result.rows[0]
+            message: 'All items removed from cart successfully'
         });
     } catch (err) {
         res.status(500).json({

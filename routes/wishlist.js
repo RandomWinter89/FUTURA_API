@@ -30,6 +30,30 @@ router.post('/users/:id/wishlist', async (req, res) => {
     }
 });
 
+router.get('/users/:id/wishlist', async (req, res) => {
+    const client = await pool.connect();
+    const { id } = req.params;
+
+    try {
+        const result = await client.query(`
+            SELECT id FROM wishlist_cart WHERE user_id = $1
+        `, [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'No products' });
+        }
+
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+});
+
 // ====== Wishlist Item ==============================================>
 
 // Should be improve and coordinate with product side

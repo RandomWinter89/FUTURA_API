@@ -117,7 +117,7 @@ router.delete('users/:id/review/:review_id', async (req, res) => {
 router.put('users/:id/review/:review_id', async (req, res) => {
     const client = await pool.connect();
     const { id, review_id } = req.params;
-    const { rating_value, review } = req.body;
+    const { rating_value, comment } = req.body;
 
     try {
         const result = await client.query(`

@@ -9,15 +9,14 @@ const pool = require('../db/pool');
 // Signup - Create a new user
 router.post('/users/signup', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
-    const { username, email, phone, gender, birthdate } = req.body;
+    const { uid, username, email, phone, gender, birthdate } = req.body;
 
     try {
         const result = await client.query(`
-            INSERT INTO users (username, email, phone, gender, birth) 
-                VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO users (uid, username, email, phone, gender, birth) 
+                VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
-        `, [id, username, email, phone, gender, birthdate]);
+        `, [uid, username, email, phone, gender, birthdate]);
 
         res.json({
             status: 'Success',
@@ -138,8 +137,7 @@ router.delete('/users/:id', async (req, res) => {
 
         res.status(200).json({
             status: 'Success',
-            message: 'User deleted successfully', 
-            deletedData: result.rows[0]
+            message: 'User deleted successfully'
         });
     } catch (err) {
         res.status(500).json({

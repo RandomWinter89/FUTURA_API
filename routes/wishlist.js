@@ -4,16 +4,16 @@ const pool = require('../db/pool.js');
 
 // ====== Wishlist ==============================================>
 
-router.post('/users/:id/wishlist', async (req, res) => {
+router.post('/users/:uid/wishlist', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
 
     try {
         const result = await client.query(`
             INSERT INTO wishlist_cart (user_id)
                 VALUES ($1)
             RETURNING *
-        `, [id]);
+        `, [uid]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'No products' });
@@ -30,14 +30,14 @@ router.post('/users/:id/wishlist', async (req, res) => {
     }
 });
 
-router.get('/users/:id/wishlist', async (req, res) => {
+router.get('/users/:uid/wishlist', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
 
     try {
         const result = await client.query(`
             SELECT id FROM wishlist_cart WHERE user_id = $1
-        `, [id]);
+        `, [uid]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'No products' });
@@ -56,8 +56,7 @@ router.get('/users/:id/wishlist', async (req, res) => {
 
 // ====== Wishlist Item ==============================================>
 
-// Should be improve and coordinate with product side
-router.get('/users/:id/wishlist', async (req, res) => {
+router.get('/users/:uid/wishlist', async (req, res) => {
     const client = await pool.connect();
 
     try {
@@ -69,7 +68,7 @@ router.get('/users/:id/wishlist', async (req, res) => {
             JOIN wishlist_item wi ON wc.id = wi.wishlist_id
                 WHERE wc.user_id = $1
             RETURNING *
-        `, [req.params.id]);
+        `, [req.params.uid]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'No products' });
@@ -86,23 +85,23 @@ router.get('/users/:id/wishlist', async (req, res) => {
     }
 });
 
-router.post('/users/:id/wishlist/:product_id', async (req, res) => {
+router.post('/users/:uid/wishlist/:product_id', async (req, res) => {
     const client = await pool.connect();
-    const { id, product_id } = req.params;
+    const { uid, product_id } = req.params;
     const { wishlist_id } = req.body;
 
     try {
         // Check if the wishlist exists for the user
         const wishlistResult = await client.query(`
             SELECT * FROM wishlist_cart WHERE user_id = $1
-        `, [id]);
+        `, [uid]);
 
         if (wishlistResult.rows.length === 0) {
             return res.status(404).json({ error: 'Wishlist not found' });
         }
 
         const result = await client.query(`
-            INSERT INTO wishlist_item (wishlist_id, product_item_id)
+            INSERT INTO wishlist_item (wishlist_id, product_id)
                 VALUES ($1, $2)
             RETURNING *
         `, [wishlist_id, product_id]);
@@ -122,16 +121,16 @@ router.post('/users/:id/wishlist/:product_id', async (req, res) => {
     }
 });
 
-router.delete('/users/:id/wishlist/:product_id', async (req, res) => {
+router.delete('/users/:uid/wishlist/:product_id', async (req, res) => {
     const client = await pool.connect();
-    const { id, product_id } = req.params;
+    const { uid, product_id } = req.params;
     const { wishlist_id } = req.body;
 
     try {
         // Check if the wishlist exists for the user
         const wishlistResult = await client.query(`
             SELECT * FROM wishlist_cart WHERE user_id = $1
-        `, [id]);
+        `, [uid]);
 
         if (wishlistResult.rows.length === 0) {
             return res.status(404).json({ error: 'Wishlist not found' });
@@ -139,7 +138,7 @@ router.delete('/users/:id/wishlist/:product_id', async (req, res) => {
 
         const result = await client.query(`
             DELETE FROM wishlist_item
-                WHERE wishlist_id = $1 AND product_item_id = $2
+                WHERE wishlist_id = $1 AND product_id = $2
             RETURNING *
         `, [wishlist_id, product_id]);
 

@@ -4,9 +4,9 @@ const pool = require('../db/pool');
 
 // ==============================
 // Create user's order
-router.post('/users/:id/order', async (req, res) => {
+router.post('/users/:uid/order', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
     const { payment_method_id, shipping_address_id, shipping_method, order_total, order_status } = req.body;
 
     try {
@@ -14,7 +14,7 @@ router.post('/users/:id/order', async (req, res) => {
             INSERT INTO user_order (user_id, order_date, payment_method_id, shipping_address_id, shipping_method, order_total, order_status)
                 VALUES ($1, NOW(), $2, $3, $4, $5, $6)
             RETURNING *
-        `, [id, payment_method_id, shipping_address_id, shipping_method, order_total, order_status]);
+        `, [uid, payment_method_id, shipping_address_id, shipping_method, order_total, order_status]);
 
         res.json({
             status: 'Success',
@@ -33,14 +33,14 @@ router.post('/users/:id/order', async (req, res) => {
 
 
 // Get order by user id
-router.get('/users/:id/order', async (req, res) => {
+router.get('/users/:uid/order', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
 
     try {
         const result = await client.query(`
             SELECT * FROM user_order WHERE user_id = $1
-        `, [id]);
+        `, [uid]);
 
         res.json({
             status: 'Success',
@@ -64,14 +64,14 @@ router.get('/users/:id/order', async (req, res) => {
 router.post('/order/:order_id', async (req, res) => {
     const client = await pool.connect();
     const { order_id } = req.params;
-    const { product_item_id, quantity, price } = req.body;
+    const { product_id, quantity, price, product_variation_id } = req.body;
 
     try {
         const result = await client.query(`
-            INSERT INTO ordered_item (product_item_id, order_id, quantity, price) 
-                VALUES ($1, $2, $3, $4)
+            INSERT INTO ordered_item (product_id, order_id, quantity, price, product_variation_id) 
+                VALUES ($1, $2, $3, $4, $5)
             RETURNING *
-        `, [product_item_id, order_id, quantity, price]);
+        `, [product_id, order_id, quantity, price, product_variation_id]);
 
         res.json({
             status: 'Success',

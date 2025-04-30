@@ -9,14 +9,14 @@ const pool = require('../db/pool');
 // Signup - Create a new user
 router.post('/users/signup', async (req, res) => {
     const client = await pool.connect();
-    const { uid, username, email, phone, gender, birthdate } = req.body;
+    const { uid, username, email} = req.body;
 
     try {
         const result = await client.query(`
-            INSERT INTO users (uid, username, email, phone, gender, birth) 
-                VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO users (uid, username, email) 
+                VALUES ($1, $2, $3)
             RETURNING *
-        `, [uid, username, email, phone, gender, birthdate]);
+        `, [uid, username, email]);
 
         res.json({
             status: 'Success',
@@ -59,15 +59,15 @@ router.get('/users/', async (req, res) => {
 
 
 
-// READ(GET) - Specified user by Email (NEED STRICTER RULES)
-router.get('/users/:email', async (req, res) => {
+// READ(GET) - Specified user by Email (NEED STRICTER RULES) //Uid
+router.get('/users/:uid', async (req, res) => {
     const client = await pool.connect();
 
     try {
         const result = await client.query(`
             SELECT * FROM users 
-                WHERE email = $1
-        `, [req.params.email]);
+                WHERE uid = $1
+        `, [req.params.uid]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -86,18 +86,18 @@ router.get('/users/:email', async (req, res) => {
 
 
 // UPDATE(PUT) - Update a user by ID
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:uid', async (req, res) => {
     const client = await pool.connect();
-    const id = req.params.id;
+    const uid = req.params.uid;
     const { username, phone, gender, birth } = req.body;
 
     try {
         const result = await client.query(`
             UPDATE users 
                 SET username = $1, phone = $2, gender = $3, birth = $4 
-                    WHERE id = $5
+                    WHERE uid = $5
             RETURNING *
-        `, [username, phone, gender, birth, id])
+        `, [username, phone, gender, birth, uid])
 
         if (result.rowCount === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -121,15 +121,15 @@ router.put('/users/:id', async (req, res) => {
 
 
 // DELETE - Delete user by Email
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:uid', async (req, res) => {
     const client = await pool.connect();
 
     try {
         const result = await client.query(`
             DELETE FROM users
-                WHERE id = $1
+                WHERE uid = $1
             RETURNING *
-        `, [req.params.id]);
+        `, [req.params.uid]);
 
         if (result.rowCount === 0) {
             return res.status(404).json({ error: 'User not found' });

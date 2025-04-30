@@ -5,9 +5,9 @@ const pool = require('../db/pool.js');
 // ====== Review Method ==============================================>
 
 //Create Review 
-router.post('/users/:id/review', async (req, res) => {
+router.post('/users/:uid/review', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
     const { product_id, comment, rating_value } = req.body;
 
     try {
@@ -15,7 +15,7 @@ router.post('/users/:id/review', async (req, res) => {
             INSERT INTO user_review (created_by_userid, product_id, created_datetime, comment, rating_value)
                 VALUES ($1, $2, NOW(), $3, $4)
             RETURNING *
-        `, [id, product_id, comment, rating_value]);
+        `, [uid, product_id, comment, rating_value]);
 
         res.json({
             status: 'Success',
@@ -34,7 +34,7 @@ router.post('/users/:id/review', async (req, res) => {
 
 
 //Get All Review by UserID
-router.get('/users/:id/review', async (req, res) => {
+router.get('/users/:uid/review', async (req, res) => {
     const client = await pool.connect();
     const { id } = req.params;
 
@@ -86,16 +86,16 @@ router.get('/products/:id/review', async (req, res) => {
 
 
 //Delete Review by ProductID and UserID
-router.delete('users/:id/review/:review_id', async (req, res) => {
+router.delete('users/:uid/review/:review_id', async (req, res) => {
     const client = await pool.connect();
-    const { id, review_id } = req.params;
+    const { uid, review_id } = req.params;
 
     try {
         const result = await client.query(`
             DELETE FROM user_review 
                 WHERE created_by_userid = $1 AND id = $2
             RETURNING *
-        `, [review_id, id]);
+        `, [uid, review_id]);
 
         res.json({
             status: 'Success',
@@ -114,9 +114,9 @@ router.delete('users/:id/review/:review_id', async (req, res) => {
 
 
 //Update Review by userID and reviewID
-router.put('users/:id/review/:review_id', async (req, res) => {
+router.put('users/:uid/review/:review_id', async (req, res) => {
     const client = await pool.connect();
-    const { id, review_id } = req.params;
+    const { uid, review_id } = req.params;
     const { rating_value, comment } = req.body;
 
     try {
@@ -125,7 +125,7 @@ router.put('users/:id/review/:review_id', async (req, res) => {
                 SET rating_value = $1, comment = $2 
                     WHERE created_by_userid = $3 AND id = $4
             RETURNING *
-        `, [rating_value, comment, id, review_id]);
+        `, [rating_value, comment, uid, review_id]);
 
         res.json({
             status: 'Success',

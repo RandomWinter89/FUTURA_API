@@ -30,7 +30,7 @@ router.get('/products', async (req, res) => {
 });
 
 // Get Product Categories (Suitable? for product categories)
-router.get('/products?category=:category_id', async (req, res) => {
+router.get('/products/category/:category_id', async (req, res) => {
     const client = await pool.connect();
     const {category_id} = req.params.id;
 
@@ -56,16 +56,16 @@ router.get('/products?category=:category_id', async (req, res) => {
 });
 
 
-// == Product Item ==============================================>
+// == Product Variation ==============================================>
 
-// Get Product's Item
+// Get Product's Variation
 router.get('/products/:id', async (req, res) => {
     const client = await pool.connect();
     const id = req.params.id;
 
     try {
         const result = await client.query(`
-            SELECT * FROM product_item 
+            SELECT * FROM product_variation 
                 WHERE product_id = $1 
         `, [id]);
 
@@ -84,28 +84,61 @@ router.get('/products/:id', async (req, res) => {
     }
 });
 
-// Get Product's Item Variations
-router.get('/products/:id/variation', async (req, res) => {
+// // Get Product's Variation Choices
+// router.get('/products/:id/variation', async (req, res) => {
+//     const client = await pool.connect();
+//     const id = req.params.id;
+
+//     try {
+//         const result = await client.query(`
+//             SELECT 
+//                 pv.product_id,
+//                 vo.id AS variation_option_id,
+//                 vo.value AS variation_option_value,
+//                 vo.extra_charge,
+//                 v.id AS variation_id,
+//                 v.name AS variation_name
+//             FROM product_variation AS pv
+//             JOIN variation_option AS vo ON pv.variation_option_id = vo.id
+//             JOIN variation AS v ON vo.variation_id = v.id
+//             WHERE pv.product_item_id = $1
+//         `, [id]);
+
+//         if (result.rows.length === 0) {
+//             return res.status(404).json({ error: 'No product configuration - found' });
+//         }
+
+//         res.status(200).json(result.rows);
+//     } catch (err) {
+//         res.status(500).json({
+//             error: 'Internal Server Error',
+//             message: err.message
+//         })
+//     } finally {
+//         client.release();
+//     }
+// });
+
+// Get Variation
+router.get('/products/variations', async (req, res) => {
     const client = await pool.connect();
-    const id = req.params.id;
 
     try {
+        // const result = await client.query(`
+        //     SELECT * FROM variation_option
+        //         WHERE variation_id = $1 
+        // `, [variation_id]);
         const result = await client.query(`
             SELECT 
-                pc.product_item_id,
-                vo.id AS variation_option_id,
-                vo.value AS variation_option_value,
-                vo.extra_charge,
-                v.id AS variation_id,
-                v.name AS variation_name
-            FROM product_configuration pc
-            JOIN variation_option vo ON pc.variation_option_id = vo.id
-            JOIN variation v ON vo.variation_id = v.id
-            WHERE pc.product_item_id = $1
-        `, [id]);
+                vo.id as variation_option_id,
+                va.name as name,
+                vo.value as value,
+            FROM variation_option as vo
+            JOIN variation as v ON vo.variation_id = v.id
+        `, []);
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'No product configuration - found' });
+            return res.status(404).json({ error: 'No variation - found' });
         }
 
         res.status(200).json(result.rows);
@@ -117,7 +150,7 @@ router.get('/products/:id/variation', async (req, res) => {
     } finally {
         client.release();
     }
-});
+})
 
 
 // == Category ==============================================>

@@ -5,14 +5,14 @@ const pool = require('../db/pool.js');
 // ====== Payment Method ==============================================>
 
 //Get All Payment Method by UserID
-router.get('/users/:id/payment', async (req, res) => {
+router.get('/users/:uid/payment', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
 
     try {
         const result = await client.query(`
             SELECT * FROM payment_method WHERE user_id = $1
-        `, [id]);
+        `, [uid]);
 
         res.json({
             status: 'Success',
@@ -31,17 +31,17 @@ router.get('/users/:id/payment', async (req, res) => {
 
 
 //Create Payment Method for UserID
-router.post('/users/:id/payment', async (req, res) => {
+router.post('/users/:uid/payment', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
     const { payment_type, provider, account_number, expiry_date, is_default } = req.body;
 
     try {
         const result = await client.query(`
             INSERT INTO payment_method (user_id, payment_type, provider, account_number, expiry_date, is_default)
-                VALUES ($1, $2, $3, $4, $5)
+                VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
-        `, [id, payment_type, provider, account_number, expiry_date, is_default]);
+        `, [uid, payment_type, provider, account_number, expiry_date, is_default]);
 
         res.json({
             status: 'Success',
@@ -60,9 +60,9 @@ router.post('/users/:id/payment', async (req, res) => {
 
 
 //Update Payment Method for UserID
-router.put('/users/:id/payment/:paymentId', async (req, res) => {
+router.put('/users/:uid/payment/:paymentId', async (req, res) => {
     const client = await pool.connect();
-    const { id, paymentId } = req.params;
+    const { uid, paymentId } = req.params;
     const { payment_type, provider, account_number, expiry_date, is_default } = req.body;
 
     try {
@@ -71,7 +71,7 @@ router.put('/users/:id/payment/:paymentId', async (req, res) => {
                 SET payment_type = $1, provider = $2, account_number = $3, expiry_date = $4, is_default = $5
                 WHERE user_id = $6 AND id = $7
             RETURNING *
-        `, [payment_type, provider, account_number, expiry_date, is_default, id, paymentId]);
+        `, [payment_type, provider, account_number, expiry_date, is_default, uid, paymentId]);
 
         res.json({
             status: 'Success',
@@ -90,14 +90,14 @@ router.put('/users/:id/payment/:paymentId', async (req, res) => {
 
 
 //Delete Payment Method for UserID
-router.delete('/users/:id/payment/:paymentId', async (req, res) => {
+router.delete('/users/:uid/payment/:paymentId', async (req, res) => {
     const client = await pool.connect();
-    const { id, paymentId } = req.params;
+    const { uid, paymentId } = req.params;
 
     try {
         const result = await client.query(`
             DELETE FROM payment_method WHERE user_id = $1 AND id = $2
-        `, [id, paymentId]);
+        `, [uid, paymentId]);
 
         res.json({
             status: 'Success',

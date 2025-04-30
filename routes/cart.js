@@ -4,16 +4,16 @@ const pool = require('../db/pool');
 
 // ==============================
 // shopping cart - create
-router.post('/users/:id/cart', async (req, res) => {
+router.post('/users/:uid/cart', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
 
     try {
         const result = await client.query(`
             INSERT INTO shopping_cart (user_id)
                 VALUES ($1)
             RETURNING *
-        `, [id]);
+        `, [uid]);
 
         res.json({
             status: 'Success',
@@ -31,14 +31,14 @@ router.post('/users/:id/cart', async (req, res) => {
 });
 
 // shopping cart - get cart by uid
-router.get('/users/:id/cart', async (req, res) => {
+router.get('/users/:uid/cart', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
 
     try {
         const result = await client.query(`
             SELECT * FROM shopping_cart WHERE user_id = $1
-        `, [id]);
+        `, [uid]);
 
         res.json({
             status: 'Success',
@@ -61,14 +61,14 @@ router.get('/users/:id/cart', async (req, res) => {
 router.post('/cart/:cart_id/addProduct', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
-    const { product_item_id, quantity } = req.body;
+    const { product_id, product_variation_id, quantity } = req.body;
 
     try {
         const result = await client.query(`
-            INSERT INTO shopping_cart_item (cart_id, product_item_id, quantity) 
-                VALUES ($1, $2, $3)
+            INSERT INTO shopping_cart_item (cart_id, product_id, product_variation_id, quantity) 
+                VALUES ($1, $2, $3. $4)
             RETURNING *
-        `, [cart_id, product_item_id, quantity]);
+        `, [cart_id, product_id, product_variation_id, quantity]);
 
         res.json({
             status: 'Success',
@@ -114,15 +114,15 @@ router.get('/cart/:cart_id/items', async (req, res) => {
 router.put('/cart/:cart_id/updateQuantity', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
-    const { product_item_id, quantity } = req.body;
+    const { product_id, product_variation_id, quantity } = req.body;
 
     try {
         const result = await client.query(`
             UPDATE shopping_cart_item 
                 SET quantity = $1 
-                    WHERE cart_id = $2 AND product_item_id = $3
+                    WHERE cart_id = $2 AND product_id = $3 AND product_variation_id = $4
             RETURNING *
-        `, [quantity, cart_id, product_item_id]);
+        `, [quantity, cart_id, product_id, product_variation_id]);
 
         res.json({
             status: 'Success',
@@ -143,19 +143,19 @@ router.put('/cart/:cart_id/updateQuantity', async (req, res) => {
 router.delete('/cart/:cart_id/removeProduct', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
-    const { product_item_ids } = req.body || {}; // Expecting an array of product_item_ids
+    const { product_id, product_variation_id } = req.body || {};
 
     try {
         const result = await client.query(`
             DELETE FROM shopping_cart_item 
-                WHERE cart_id = $1 AND product_item_id = ANY($2::int[]) 
+                WHERE cart_id = $1 AND product_id = $2 AND product_variation_id = $3
             RETURNING *
-        `, [cart_id, product_item_ids]);
+        `, [cart_id, product_id, product_variation_id]);
 
         res.json({
             status: 'Success',
             message: 'Item remove from cart successfully',
-            data: result.rows
+            data: result.rows[0]
         });
     } catch (err) {
         res.status(500).json({

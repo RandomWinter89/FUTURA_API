@@ -10,8 +10,21 @@ router.get('/products', async (req, res) => {
     const client = await pool.connect();
 
     try {
+        // SELECT * FROM product
         const result = await client.query(`
-            SELECT * FROM product 
+            SELECT 
+                p.id, 
+                p.category_id, 
+                p.name, 
+                p.description, 
+                p.base_price, 
+                p.sku, 
+                p.created_date,
+                COUNT(r.id) AS number_of_reviews,
+                AVG(r.rating_value) AS average_rating
+            FROM product as p
+            LEFT JOIN user_review r ON p.id = r.product_id
+            GROUP by p.id, p.category_id, p.name, p.description, p.base_price, p.sku, p.created_date
         `);
 
         if (result.rows.length === 0) {
@@ -58,33 +71,7 @@ router.get('/products/category/:category_id', async (req, res) => {
 
 // == Product Variation ==============================================>
 
-// Get Product's Variation
-router.get('/products/:id', async (req, res) => {
-    const client = await pool.connect();
-    const id = req.params.id;
-
-    try {
-        const result = await client.query(`
-            SELECT * FROM product_variation 
-                WHERE product_id = $1 
-        `, [id]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'No product item - found' });
-        }
-
-        res.status(200).json(result.rows);
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-});
-
-// // Get Product's Variation Choices
+    // // Get Product's Variation Choices
 // router.get('/products/:id/variation', async (req, res) => {
 //     const client = await pool.connect();
 //     const id = req.params.id;
@@ -131,11 +118,11 @@ router.get('/products/variations', async (req, res) => {
         const result = await client.query(`
             SELECT 
                 vo.id as variation_option_id,
-                va.name as name,
-                vo.value as value,
+                v.name as name,
+                vo.value as value
             FROM variation_option as vo
             JOIN variation as v ON vo.variation_id = v.id
-        `, []);
+        `);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'No variation - found' });
@@ -144,13 +131,41 @@ router.get('/products/variations', async (req, res) => {
         res.status(200).json(result.rows);
     } catch (err) {
         res.status(500).json({
-            error: 'Internal Server Error',
+            error: 'Internal Server Error - from variations',
             message: err.message
         })
     } finally {
         client.release();
     }
 })
+
+// Get Product's Variation
+router.get('/products/:id', async (req, res) => {
+    const client = await pool.connect();
+    const id = req.params.id;
+
+    try {
+        const result = await client.query(`
+            SELECT * FROM product_variation 
+                WHERE product_id = $1 
+        `, [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'No product item - found' });
+        }
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error - from id',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+});
+
+
 
 
 // == Category ==============================================>

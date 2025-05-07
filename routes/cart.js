@@ -43,7 +43,7 @@ router.get('/users/:uid/cart', async (req, res) => {
         res.json({
             status: 'Success',
             message: 'Cart found successfully',
-            data: result.rows
+            data: result.rows[0]
         });
     } catch (err) {
         res.status(500).json({
@@ -66,7 +66,7 @@ router.post('/cart/:cart_id/addProduct', async (req, res) => {
     try {
         const result = await client.query(`
             INSERT INTO shopping_cart_item (cart_id, product_id, product_variation_id, quantity) 
-                VALUES ($1, $2, $3. $4)
+                VALUES ($1, $2, $3, $4)
             RETURNING *
         `, [cart_id, product_id, product_variation_id, quantity]);
 
@@ -85,14 +85,50 @@ router.post('/cart/:cart_id/addProduct', async (req, res) => {
     }
 });
 
-// cart item - get all items by cart id
+// cart item - get all items by cart id (product, product variation, variation)
 router.get('/cart/:cart_id/items', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
 
     try {
+        // const result = await client.query(`
+        //     SELECT * FROM shopping_cart_item WHERE cart_id = $1
+        // `, [cart_id]);
+
         const result = await client.query(`
-            SELECT * FROM shopping_cart_item WHERE cart_id = $1
+            SELECT
+                ci.id,
+                ci.quantity,
+                p.id as product_id,
+                p.name,
+                p.base_price,
+                p.sku,
+                pv.id as product_variation_id,
+                pv.extra_charge,
+                vo1.value as value1,
+                v1.name as name1,
+                vo2.value as value2,
+                v2.name as name2
+            FROM shopping_cart_item AS ci
+                JOIN product AS p 
+                    ON p.id = ci.product_id
+
+                JOIN product_variation AS pv
+                    ON pv.id = ci.product_variation_id
+
+                LEFT JOIN variation_option as vo1
+                    ON vo1.id = pv.variation_option_id
+
+                    LEFT JOIN variation as v1
+                        ON v1.id = vo1.variation_id
+
+                LEFT JOIN variation_option as vo2
+                    ON vo2.id = pv.variation_option_2_id
+
+                    LEFT JOIN variation as v2
+                        ON v2.id = vo2.variation_id
+
+            WHERE ci.cart_id = $1;
         `, [cart_id]);
 
         res.json({

@@ -26,9 +26,6 @@ getPostgresVersion();
 const userRoutes = require('./routes/user');
 app.use('/', userRoutes);
 
-const followRoutes = require('./routes/follow');
-app.use('/', followRoutes);
-
 const cartRoutes = require('./routes/cart');
 app.use('/', cartRoutes);
 
@@ -52,6 +49,9 @@ app.use('/', reviewRoutes);
 
 const promotionRoutes = require('./routes/promotion');
 app.use('/', promotionRoutes);
+
+const stripeRoutes = require('./routes/stripe');
+app.use('/api', stripeRoutes);
 
 // ====== API Listen ==============================================>
 

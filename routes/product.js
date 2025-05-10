@@ -2,10 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool.js');
 
-// == Product ==============================================>
-
-
-// Get All Products
+// == Fetch Product ==============================================>
 router.get('/products', async (req, res) => {
     const client = await pool.connect();
 
@@ -42,22 +39,30 @@ router.get('/products', async (req, res) => {
     }
 });
 
-// Get Product Categories (Suitable? for product categories)
-router.get('/products/category/:category_id', async (req, res) => {
+
+// == Create Product =================================================>
+router.post('/products', async (req, res) => {
     const client = await pool.connect();
-    const {category_id} = req.params.id;
+    const {
+        category_id,
+        name,
+        description,
+        base_price,
+        sku
+    } = req.body;
 
     try {
         const result = await client.query(`
-            SELECT * FROM product 
-                WHERE category_id = $1
-        `, [category_id]);
+            INSERT INTO product (category_id, name, description, base_price, sku, created_date)
+                VALUES ($1, $2, $3, $4, $5, NOW())
+            RETURNING *
+        `, [category_id, name, description, base_price, sku]);
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'No products' });
-        }
-
-        res.status(200).json(result.rows);
+        res.json({
+            status: 'Success',
+            message: `Product is created`,
+            data: result.rows[0]
+        });
     } catch (err) {
         res.status(500).json({
             error: 'Internal Server Error',
@@ -66,55 +71,48 @@ router.get('/products/category/:category_id', async (req, res) => {
     } finally {
         client.release();
     }
-});
+})
 
+// == Create Product Variation =============================================>
+router.post('/products/:id/variations', async (req, res) => {
+    const client = await pool.connect();
+    const { id } = req.params;
+    const {
+        optionA_id,
+        optionB_id,
+        quantity,
+        charge
+    } = req.body;
 
-// == Product Variation ==============================================>
+    try {
+        const result = await client.query(`
+            INSERT INTO product_variation (product_id, variation_option_id, variation_option_2_id, quantity, extra_charge)
+                VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `, [id, optionA_id, optionB_id, quantity, charge]);
 
-    // // Get Product's Variation Choices
-// router.get('/products/:id/variation', async (req, res) => {
-//     const client = await pool.connect();
-//     const id = req.params.id;
+        res.json({
+            status: 'Success',
+            message: `Product Variation is created`,
+            data: result.rows[0]
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
 
-//     try {
-//         const result = await client.query(`
-//             SELECT 
-//                 pv.product_id,
-//                 vo.id AS variation_option_id,
-//                 vo.value AS variation_option_value,
-//                 vo.extra_charge,
-//                 v.id AS variation_id,
-//                 v.name AS variation_name
-//             FROM product_variation AS pv
-//             JOIN variation_option AS vo ON pv.variation_option_id = vo.id
-//             JOIN variation AS v ON vo.variation_id = v.id
-//             WHERE pv.product_item_id = $1
-//         `, [id]);
+// == Fetch Product Variation ==============================================>
 
-//         if (result.rows.length === 0) {
-//             return res.status(404).json({ error: 'No product configuration - found' });
-//         }
-
-//         res.status(200).json(result.rows);
-//     } catch (err) {
-//         res.status(500).json({
-//             error: 'Internal Server Error',
-//             message: err.message
-//         })
-//     } finally {
-//         client.release();
-//     }
-// });
-
-// Get Variation
+// Get Variation Option
 router.get('/products/variations', async (req, res) => {
     const client = await pool.connect();
 
     try {
-        // const result = await client.query(`
-        //     SELECT * FROM variation_option
-        //         WHERE variation_id = $1 
-        // `, [variation_id]);
         const result = await client.query(`
             SELECT 
                 vo.id as variation_option_id,
@@ -139,15 +137,34 @@ router.get('/products/variations', async (req, res) => {
     }
 })
 
-// Get Product's Variation
-router.get('/products/:id', async (req, res) => {
+// Get Variation
+router.get('/products/variation/:id', async (req, res) => {
     const client = await pool.connect();
     const id = req.params.id;
 
     try {
         const result = await client.query(`
-            SELECT * FROM product_variation 
-                WHERE product_id = $1 
+            SELECT
+                pv.id,
+                pv.product_id,
+                pv.quantity,
+                pv.extra_charge,
+                vo1.value as value1,
+                v1.name as name1,
+                vo2.value as value2,
+                v2.name as name2
+            FROM product_variation as pv 
+                LEFT JOIN variation_option as vo1
+                    ON vo1.id = pv.variation_option_id
+                    LEFT JOIN variation as v1
+                        ON v1.id = vo1.variation_id
+
+                LEFT JOIN variation_option as vo2
+                    ON vo2.id = pv.variation_option_2_id
+
+                    LEFT JOIN variation as v2
+                        ON v2.id = vo2.variation_id
+            WHERE pv.product_id = $1 
         `, [id]);
 
         if (result.rows.length === 0) {
@@ -165,34 +182,6 @@ router.get('/products/:id', async (req, res) => {
     }
 });
 
-
-
-
-// == Category ==============================================>
-
-// Get Category
-router.get('/categories', async (req, res) => {
-    const client = await pool.connect();
-
-    try {
-        const result = await client.query(`
-            SELECT * FROM product_categories
-        `);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'No categories' });
-        }
-
-        res.status(200).json(result.rows);
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-});
 
 
 module.exports = router;

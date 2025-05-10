@@ -35,9 +35,6 @@ app.use('/', addressRoutes);
 const productRoutes = require('./routes/product');
 app.use('/', productRoutes);
 
-const paymentRoutes = require('./routes/payment');
-app.use('/', paymentRoutes);
-
 const orderedRoutes = require('./routes/ordered');
 app.use('/', orderedRoutes);
 

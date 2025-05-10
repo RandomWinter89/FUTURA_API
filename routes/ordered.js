@@ -7,14 +7,14 @@ const pool = require('../db/pool');
 router.post('/users/:uid/order', async (req, res) => {
     const client = await pool.connect();
     const { uid } = req.params;
-    const { payment_method_id, shipping_address_id, shipping_method, order_total, order_status } = req.body;
+    const { shipping_address_id, shipping_method, order_total, order_status } = req.body;
 
     try {
         const result = await client.query(`
-            INSERT INTO user_order (user_id, order_date, payment_method_id, shipping_address_id, shipping_method, order_total, order_status)
-                VALUES ($1, NOW(), $2, $3, $4, $5, $6)
+            INSERT INTO user_order (user_id, order_date, shipping_address_id, shipping_method, order_total, order_status)
+                VALUES ($1, NOW(), $2, $3, $4, $5)
             RETURNING *
-        `, [uid, payment_method_id, shipping_address_id, shipping_method, order_total, order_status]);
+        `, [uid, shipping_address_id, shipping_method, order_total, order_status]);
 
         res.json({
             status: 'Success',
@@ -113,6 +113,73 @@ router.get('/order/:order_id', async (req, res) => {
         client.release();
     }
 });
+
+
+// ==============================
+
+router.get('/orders', async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const result = await client.query(`
+            SELECT 
+                uo.id,
+                uo.order_date,
+                uo.shipping_method,
+                uo.order_total,
+                uo.order_status,
+                u.username as name,
+                a.address_line1,
+                a.address_line2,
+                a.city,
+                a.region,
+                a.postal_code
+            FROM user_order as uo
+                JOIN users as u on u.uid = uo.user_id
+                JOIN address as a on a.id = uo.shipping_address_id
+        `, []);
+
+        res.json({
+            status: 'Success',
+            message: 'All Orders are extracted',
+            data: result.rows
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
+
+router.put('/order/:order_id', async (req, res) => {
+    const client = await pool.connect();
+    const {order_id} = req.params;
+    const {status} = req.body
+
+    try {
+        const result = await client.query(`
+            UPDATE ordered_item 
+                SET order_status = $1
+            WHERE id = $2
+        `, [status, order_id]);
+
+        res.json({
+            status: 'Success',
+            message: 'Update Order Status',
+            data: result.rows
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
 
 
 

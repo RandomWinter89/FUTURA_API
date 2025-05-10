@@ -5,8 +5,8 @@ const pool = require('../db/pool.js');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-router.post('/create-payment-intent/:paymentID/:addressID', async (req, res) => {
-  const {paymentID, addressID} = req.params;
+router.post('/create-payment-intent/:addressID', async (req, res) => {
+  const {addressID} = req.params;
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -24,8 +24,8 @@ router.post('/create-payment-intent/:paymentID/:addressID', async (req, res) => 
           quantity: item.quantity,
         }
       }),
-      success_url: `${process.env.CLIENT_URL}/success/${paymentID}&${addressID}`,
-      cancel_url: `${process.env.CLIENT_URL}/cancel/`,
+      success_url: `${process.env.CLIENT_URL}/User/Checkout/Success/${addressID}`,
+      cancel_url: `${process.env.CLIENT_URL}/User/Checkout/Failed`,
     })
     res.json({ url: session.url })
   } catch (e) {

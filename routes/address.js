@@ -93,7 +93,7 @@ router.delete('/users/:uid/address/:address_id', async (req, res) => {
     try {
         const result = await client.query(`
             DELETE FROM address 
-                WHERE address_id = $1 AND user_id = $2
+                WHERE id = $1 AND user_id = $2
             RETURNING *
         `, [address_id, uid]);
 

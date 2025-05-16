@@ -47,9 +47,6 @@ app.use('/', wishlistRoutes);
 const reviewRoutes = require('./routes/review');
 app.use('/', reviewRoutes);
 
-const promotionRoutes = require('./routes/promotion');
-app.use('/', promotionRoutes);
-
 const stripeRoutes = require('./routes/stripe');
 app.use('/api', stripeRoutes);
 

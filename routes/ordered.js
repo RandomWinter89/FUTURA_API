@@ -114,7 +114,6 @@ router.get('/order/:order_id', async (req, res) => {
     }
 });
 
-
 // ==============================
 
 router.get('/orders', async (req, res) => {
@@ -161,15 +160,16 @@ router.put('/order/:order_id', async (req, res) => {
 
     try {
         const result = await client.query(`
-            UPDATE ordered_item 
+            UPDATE user_order 
                 SET order_status = $1
             WHERE id = $2
+            RETURNING *
         `, [status, order_id]);
 
         res.json({
             status: 'Success',
             message: 'Update Order Status',
-            data: result.rows
+            data: result.rows[0]
         });
     } catch (err) {
         res.status(500).json({

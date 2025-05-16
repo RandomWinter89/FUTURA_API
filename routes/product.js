@@ -106,6 +106,31 @@ router.post('/products/:id/variations', async (req, res) => {
     }
 })
 
+// == Update Product Variation ======
+router.put('/products/:id/variations', async (req, res) => {
+    const client = await pool.connect();
+    const { id } = req.params;
+    const { quantity } = req.body;
+
+    try {
+        const result = await client.query(`
+            UPDATE product_variation
+                SET quantity = $2
+            WHERE id = $1
+            RETURNING *
+        `, [id, quantity]);
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
+
 // == Fetch Product Variation ==============================================>
 
 // Get Variation Option
@@ -181,6 +206,7 @@ router.get('/products/variation/:id', async (req, res) => {
         client.release();
     }
 });
+
 
 
 

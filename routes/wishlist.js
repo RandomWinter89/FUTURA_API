@@ -4,7 +4,7 @@ const pool = require('../db/pool.js');
 
 // ====== Wishlist ==============================================>
 
-router.post('/users/:uid/wishlist', async (req, res) => {
+router.post('/users/:uid/wishlist_id', async (req, res) => {
     const client = await pool.connect();
     const { uid } = req.params;
 
@@ -30,7 +30,7 @@ router.post('/users/:uid/wishlist', async (req, res) => {
     }
 });
 
-router.get('/users/:uid/wishlist', async (req, res) => {
+router.get('/users/:uid/wishlist_id', async (req, res) => {
     const client = await pool.connect();
     const { uid } = req.params;
 
@@ -66,8 +66,7 @@ router.get('/users/:uid/wishlist', async (req, res) => {
                 wi.product_id
             FROM wishlist_cart wc
             JOIN wishlist_item wi ON wc.id = wi.wishlist_id
-                WHERE wc.user_id = $1
-            RETURNING *
+            WHERE wc.user_id = $1
         `, [req.params.uid]);
 
         if (result.rows.length === 0) {
@@ -85,10 +84,10 @@ router.get('/users/:uid/wishlist', async (req, res) => {
     }
 });
 
-router.post('/users/:uid/wishlist/:product_id', async (req, res) => {
+router.post('/users/:uid/wishlist', async (req, res) => {
     const client = await pool.connect();
-    const { uid, product_id } = req.params;
-    const { wishlist_id } = req.body;
+    const { uid  } = req.params;
+    const { product_id, wishlist_id } = req.body;
 
     try {
         // Check if the wishlist exists for the user

@@ -181,6 +181,47 @@ router.put('/order/:order_id', async (req, res) => {
     }
 })
 
+router.get('/user/:uid/order/items', async (req, res) => {
+    const client = await pool.connect();
+    const { uid } = req.params;
+
+    try {
+        const result = await client.query(`
+            SELECT
+                uo.id,
+                p.name,
+                oi.quantity,
+                oi.price,
+                vo1.value AS value1,
+                v1.name AS name1,
+                vo2.value AS value2,
+                v2.name AS name2
+            FROM user_order AS uo
+                JOIN ordered_item AS oi ON oi.order_id = uo.id
+                JOIN product AS p ON p.id = oi.product_id
+                JOIN product_variation AS pv ON pv.id = oi.product_variation_id
+                LEFT JOIN variation_option AS vo1 ON vo1.id = pv.variation_option_id
+                    LEFT JOIN variation AS v1 ON v1.id = vo1.variation_id
+                LEFT JOIN variation_option AS vo2 ON vo2.id = pv.variation_option_2_id
+                 LEFT JOIN variation AS v2 ON v2.id = vo2.variation_id
+            WHERE uo.user_id = $1
+        `, [uid])
+
+        res.json({
+            status: 'Success',
+            message: `Order item created successfully`,
+            data: result.rows
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
+
 
 
 module.exports = router;

@@ -15,7 +15,7 @@ router.post('/create-payment-intent/:addressID', async (req, res) => {
        
         return {
           price_data: {
-            currency: "usd",
+            currency: "myr",
             product_data: {
               name: item.name,
             },

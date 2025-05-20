@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool.js');
 
-// ====== Wishlist ==============================================>
 
-router.post('/users/:uid/wishlist_id', async (req, res) => {
+// --- User's wishlist -------------------
+
+// CREATE
+router.post('/users/:uid/wishlist', async (req, res) => {
     const client = await pool.connect();
     const { uid } = req.params;
 
@@ -30,7 +32,8 @@ router.post('/users/:uid/wishlist_id', async (req, res) => {
     }
 });
 
-router.get('/users/:uid/wishlist_id', async (req, res) => {
+// READ
+router.get('/users/:uid/wishlist', async (req, res) => {
     const client = await pool.connect();
     const { uid } = req.params;
 
@@ -54,37 +57,11 @@ router.get('/users/:uid/wishlist_id', async (req, res) => {
     }
 });
 
-// ====== Wishlist Item ==============================================>
 
-router.get('/users/:uid/wishlist', async (req, res) => {
-    const client = await pool.connect();
+// --- Wishlist's item -------------------
 
-    try {
-        const result = await client.query(`
-            SELECT
-                wc.user_id,
-                wi.product_id
-            FROM wishlist_cart wc
-            JOIN wishlist_item wi ON wc.id = wi.wishlist_id
-            WHERE wc.user_id = $1
-        `, [req.params.uid]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'No products' });
-        }
-
-        res.status(200).json(result.rows);
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-});
-
-router.post('/users/:uid/wishlist', async (req, res) => {
+// CREATE
+router.post('/users/:uid/wishlist/addItem', async (req, res) => {
     const client = await pool.connect();
     const { uid  } = req.params;
     const { product_id, wishlist_id } = req.body;
@@ -120,41 +97,54 @@ router.post('/users/:uid/wishlist', async (req, res) => {
     }
 });
 
-router.delete('/users/:uid/wishlist/:product_id', async (req, res) => {
+// UPDATE (delete <--> add mode)
+router.put('/users/:uid/wishlist/:product_id', async (req, res) => {
     const client = await pool.connect();
     const { uid, product_id } = req.params;
-    const { wishlist_id } = req.body;
 
     try {
-        // Check if the wishlist exists for the user
-        const wishlistResult = await client.query(`
-            SELECT * FROM wishlist_cart WHERE user_id = $1
-        `, [uid]);
+        const check = await client.query(`
+            SELECT 
+                wi.id,
+                wi.wishlist_id,
+                wi.product_id
+            FROM wishlist_cart AS wc
+            JOIN wishlist_item AS wi ON wi.wishlist_id = wc.id
+            WHERE wc.user_id = $1 AND wi.product_id = $2
+        `, [uid, product_id]);
 
-        if (wishlistResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Wishlist not found' });
+        let message;
+        if (check.rows.length > 0) {
+            const deleted = await client.query(`
+                DELETE FROM wishlist_item
+                WHERE id = $1
+                RETURNING *
+            `, [check.rows[0].id]);
+
+            message = deleted.rows[0];
+        } else {
+            const insert = await client.query(`
+                INSERT INTO wishlist_item (wishlist_id, product_id)
+                VALUES (
+                    (SELECT id FROM wishlist_cart WHERE user_id = $1 LIMIT 1), 
+                    $2
+                )
+                RETURNING *
+            `, [uid, product_id]);
+
+            message = insert.rows[0];
         }
 
-        const result = await client.query(`
-            DELETE FROM wishlist_item
-                WHERE wishlist_id = $1 AND product_id = $2
-            RETURNING *
-        `, [wishlist_id, product_id]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'No products' });
-        }
-
-        res.status(200).json(result.rows[0]);
+        res.status(200).json(message);
     } catch (err) {
         res.status(500).json({
             error: 'Internal Server Error',
-            message: err.message
+            message: err.message,
+            data: product_id
         })
     } finally {
         client.release();
     }
-});
-
+})
 
 module.exports = router;

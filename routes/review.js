@@ -66,7 +66,14 @@ router.get('/products/:id/review', async (req, res) => {
 
     try {
         const result = await client.query(`
-            SELECT * FROM user_review WHERE product_id = $1
+            SELECT 
+                u.username,
+                ur.created_datetime,
+                ur.comment,
+                ur.rating_value
+            FROM user_review as ur
+                JOIN users as u on u.uid = created_by_userid
+            WHERE ur.product_id = $1
         `, [id]);
 
         res.json({

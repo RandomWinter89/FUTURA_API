@@ -70,7 +70,8 @@ router.get('/products/:id/review', async (req, res) => {
                 u.username,
                 ur.created_datetime,
                 ur.comment,
-                ur.rating_value
+                ur.rating_value,
+                ur.created_by_userid
             FROM user_review as ur
                 JOIN users as u on u.uid = created_by_userid
             WHERE ur.product_id = $1

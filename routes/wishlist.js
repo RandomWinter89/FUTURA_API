@@ -60,6 +60,34 @@ router.get('/users/:uid/wishlist', async (req, res) => {
 
 // --- Wishlist's item -------------------
 
+router.get('/users/:uid/wishlist/readItem', async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const result = await client.query(`
+            SELECT
+                wc.user_id,
+                wi.product_id
+            FROM wishlist_cart wc
+            JOIN wishlist_item wi ON wc.id = wi.wishlist_id
+            WHERE wc.user_id = $1
+        `, [req.params.uid]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'No products' });
+        }
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+});
+
 // CREATE
 router.post('/users/:uid/wishlist/addItem', async (req, res) => {
     const client = await pool.connect();

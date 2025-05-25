@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 
-// ==============================
+// --- USER'S CART ------------------------------>
 // shopping cart - create
 router.post('/users/:uid/cart', async (req, res) => {
     const client = await pool.connect();
@@ -55,9 +55,12 @@ router.get('/users/:uid/cart', async (req, res) => {
     }
 });
 
-// ==============================
+// id <-- connect to user's cart
+// user_id
 
-// cart item - add item
+// --- CART'S ITEM ------------------------------>
+
+// Create item to user's cart
 router.post('/cart/:cart_id/addProduct', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
@@ -65,9 +68,37 @@ router.post('/cart/:cart_id/addProduct', async (req, res) => {
 
     try {
         const result = await client.query(`
-            INSERT INTO shopping_cart_item (cart_id, product_id, product_variation_id, quantity) 
+            WITH inserted AS (
+                INSERT INTO shopping_cart_item (cart_id, product_id, product_variation_id, quantity) 
                 VALUES ($1, $2, $3, $4)
-            RETURNING *
+                RETURNING *
+            )
+            SELECT
+                ci.id,
+                ci.quantity,
+                p.id AS product_id,
+                p.name,
+                p.base_price,
+                p.sku,
+                pv.id AS product_variation_id,
+                pv.extra_charge,
+                vo1.value AS value1,
+                v1.name AS name1,
+                vo2.value AS value2,
+                v2.name AS name2
+            FROM inserted AS ci
+            JOIN product AS p 
+                ON p.id = ci.product_id
+            JOIN product_variation AS pv
+                ON pv.id = ci.product_variation_id
+            LEFT JOIN variation_option AS vo1
+                ON vo1.id = pv.variation_option_id
+            LEFT JOIN variation AS v1
+                ON v1.id = vo1.variation_id
+            LEFT JOIN variation_option AS vo2
+                ON vo2.id = pv.variation_option_2_id
+            LEFT JOIN variation AS v2
+                ON v2.id = vo2.variation_id;
         `, [cart_id, product_id, product_variation_id, quantity]);
 
         res.json({
@@ -85,16 +116,12 @@ router.post('/cart/:cart_id/addProduct', async (req, res) => {
     }
 });
 
-// cart item - get all items by cart id (product, product variation, variation)
+// Read items from user's cart
 router.get('/cart/:cart_id/items', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
 
     try {
-        // const result = await client.query(`
-        //     SELECT * FROM shopping_cart_item WHERE cart_id = $1
-        // `, [cart_id]);
-
         const result = await client.query(`
             SELECT
                 ci.id,
@@ -146,7 +173,7 @@ router.get('/cart/:cart_id/items', async (req, res) => {
     }
 });
 
-// cart item - update quantity
+// Update item's quantity from user's cart
 router.put('/cart/:cart_id/updateQuantity', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
@@ -175,7 +202,7 @@ router.put('/cart/:cart_id/updateQuantity', async (req, res) => {
     }
 });
 
-// cart item - remove specified items
+// Remove specified item from user's cart
 router.delete('/cart/:cart_id/removeProduct', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
@@ -203,7 +230,7 @@ router.delete('/cart/:cart_id/removeProduct', async (req, res) => {
     }
 });
 
-// cart item - clear all items
+// Remove all item from user's cart
 router.delete('/cart/:cart_id/clear', async (req, res) => {
     const client = await pool.connect();
     const { cart_id } = req.params;
@@ -228,5 +255,17 @@ router.delete('/cart/:cart_id/clear', async (req, res) => {
         client.release();
     }
 });
+
+// id 
+// cart_id
+// quantity
+// product_id
+    // name
+    // 
+
+// product_variation_id
+    // product_variation - color
+    // product_variation - size
+
 
 module.exports = router;

@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 
-// ==============================
-// Create user's order
+// --- USER'S ORDER --------------------------->
+
+// create user's order id
 router.post('/users/:uid/order', async (req, res) => {
     const client = await pool.connect();
     const { uid } = req.params;
@@ -31,8 +32,7 @@ router.post('/users/:uid/order', async (req, res) => {
     }
 });
 
-
-// Get order by user id
+// read user's order id
 router.get('/users/:uid/order', async (req, res) => {
     const client = await pool.connect();
     const { uid } = req.params;
@@ -57,27 +57,47 @@ router.get('/users/:uid/order', async (req, res) => {
     }
 });
 
-// ==============================
 
+// --- ORDER'S ITEM ---------------------------->
 
-// Create order item by order id
+// Create items to user's order
 router.post('/order/:order_id', async (req, res) => {
+
     const client = await pool.connect();
     const { order_id } = req.params;
-    const { product_id, quantity, price, product_variation_id } = req.body;
+    const items = req.body;
 
+    if (!Array.isArray(items) || items.length == 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "Request body must be a non-empty array of items."
+        });
+    }
+    
     try {
+        const values = [];
+        const placeholders = items.map((item, index) => {
+            const baseIndex = index * 5;
+            values.push(
+                item.product_id,
+                order_id,
+                item.quantity,
+                item.price,
+                item.product_variation_id
+            );
+
+            return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5})`;
+        }).join(", ");
+
         const result = await client.query(`
-            INSERT INTO ordered_item (product_id, order_id, quantity, price, product_variation_id) 
-                VALUES ($1, $2, $3, $4, $5)
-            RETURNING *
-        `, [product_id, order_id, quantity, price, product_variation_id]);
+            INSERT INTO ordered_item (product_id, order_id, quantity, price, product_variation_id)
+            VALUES ${placeholders}
+        `, values);
 
         res.json({
-            status: 'Success',
-            message: `Order item created successfully`,
-            data: result.rows[0]
-        });
+            status: "Success",
+            message: `${result.rowCount} order item(s) created successfully`
+        })
     } catch (err) {
         res.status(500).json({
             error: 'Internal Server Error',
@@ -86,10 +106,10 @@ router.post('/order/:order_id', async (req, res) => {
     } finally {
         client.release();
     }
+    
 });
 
-
-// Get order item by order id
+// Read 
 router.get('/order/:order_id', async (req, res) => {
     const client = await pool.connect();
     const { order_id } = req.params;
@@ -113,8 +133,6 @@ router.get('/order/:order_id', async (req, res) => {
         client.release();
     }
 });
-
-// ==============================
 
 router.get('/orders', async (req, res) => {
     const client = await pool.connect();
@@ -190,6 +208,7 @@ router.get('/user/:uid/order/items', async (req, res) => {
             SELECT
                 uo.id,
                 p.name,
+                oi.product_id,
                 oi.quantity,
                 oi.price,
                 vo1.value AS value1,

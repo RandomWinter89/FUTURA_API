@@ -65,41 +65,13 @@ router.put('/users/:uid/address/:address_id', async (req, res) => {
         const result = await client.query(`
             UPDATE address 
                 SET address_line1 = $1, address_line2 = $2, city = $3, region = $4, postal_code = $5
-                    WHERE address_id = $6 AND user_id = $7
+                    WHERE id = $6 AND user_id = $7
             RETURNING *
         `, [address_line1, address_line2, city, region, postal_code, address_id, uid]);
 
         res.json({
             status: 'Success',
             message: `User's address updated successfully`,
-            data: result.rows[0]
-        });
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-});
-
-
-// Remove Address by UID and Address ID
-router.delete('/users/:uid/address/:address_id', async (req, res) => {
-    const client = await pool.connect();
-    const { uid, address_id } = req.params;
-
-    try {
-        const result = await client.query(`
-            DELETE FROM address 
-                WHERE id = $1 AND user_id = $2
-            RETURNING *
-        `, [address_id, uid]);
-
-        res.json({
-            status: 'Success',
-            message: `User's address removed successfully`,
             data: result.rows[0]
         });
     } catch (err) {

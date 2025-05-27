@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool.js');
 
-// == Fetch Product ==============================================>
+// == Fetch Product & Variation ==============================================>
 router.get('/products', async (req, res) => {
     const client = await pool.connect();
 
@@ -39,101 +39,6 @@ router.get('/products', async (req, res) => {
     }
 });
 
-
-// == Create Product =================================================>
-router.post('/products', async (req, res) => {
-    const client = await pool.connect();
-    const {
-        category_id,
-        name,
-        description,
-        base_price,
-        sku
-    } = req.body;
-
-    try {
-        const result = await client.query(`
-            INSERT INTO product (category_id, name, description, base_price, sku, created_date)
-                VALUES ($1, $2, $3, $4, $5, NOW())
-            RETURNING *
-        `, [category_id, name, description, base_price, sku]);
-
-        res.json({
-            status: 'Success',
-            message: `Product is created`,
-            data: result.rows[0]
-        });
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-})
-
-// == Create Product Variation =============================================>
-router.post('/products/:id/variations', async (req, res) => {
-    const client = await pool.connect();
-    const { id } = req.params;
-    const {
-        optionA_id,
-        optionB_id,
-        quantity,
-        charge
-    } = req.body;
-
-    try {
-        const result = await client.query(`
-            INSERT INTO product_variation (product_id, variation_option_id, variation_option_2_id, quantity, extra_charge)
-                VALUES ($1, $2, $3, $4, $5)
-            RETURNING *
-        `, [id, optionA_id, optionB_id, quantity, charge]);
-
-        res.json({
-            status: 'Success',
-            message: `Product Variation is created`,
-            data: result.rows[0]
-        });
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-})
-
-// == Update Product Variation ======
-router.put('/products/:id/variations', async (req, res) => {
-    const client = await pool.connect();
-    const { id } = req.params;
-    const { quantity } = req.body;
-
-    try {
-        const result = await client.query(`
-            UPDATE product_variation
-                SET quantity = $2
-            WHERE id = $1
-            RETURNING *
-        `, [id, quantity]);
-
-        res.status(200).json(result.rows);
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-})
-
-// == Fetch Product Variation ==============================================>
-
-// Get Variation Option
 router.get('/products/variations', async (req, res) => {
     const client = await pool.connect();
 
@@ -162,7 +67,6 @@ router.get('/products/variations', async (req, res) => {
     }
 })
 
-// Get Variation
 router.get('/products/variation/:id', async (req, res) => {
     const client = await pool.connect();
     const id = req.params.id;
@@ -207,6 +111,136 @@ router.get('/products/variation/:id', async (req, res) => {
     }
 });
 
+// == Create Product & Variation =================================================>
+router.post('/products', async (req, res) => {
+    const client = await pool.connect();
+    const {
+        category_id,
+        name,
+        description,
+        base_price,
+        sku
+    } = req.body;
+
+    try {
+        const result = await client.query(`
+            INSERT INTO product (category_id, name, description, base_price, sku, created_date)
+                VALUES ($1, $2, $3, $4, $5, NOW())
+            RETURNING *
+        `, [category_id, name, description, base_price, sku]);
+
+        res.json({
+            status: 'Success',
+            message: `Product is created`,
+            data: result.rows[0]
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
+
+router.post('/products/:id/variations', async (req, res) => {
+    const client = await pool.connect();
+    const { id } = req.params;
+    const {
+        optionA_id,
+        optionB_id,
+        quantity,
+        charge
+    } = req.body;
+
+    try {
+        const result = await client.query(`
+            WITH inserted AS (
+                INSERT INTO product_variation (product_id, variation_option_id, variation_option_2_id, quantity, extra_charge)
+                    VALUES ($1, $2, $3, $4, $5)
+                RETURNING *
+            )
+            SELECT
+                pv.id,
+                pv.product_id,
+                pv.quantity,
+                pv.extra_charge,
+                vo1.value as value1,
+                v1.name as name1,
+                vo2.value as value2,
+                v2.name as name2
+            FROM inserted as pv 
+                LEFT JOIN variation_option as vo1 ON vo1.id = pv.variation_option_id
+                    LEFT JOIN variation as v1 ON v1.id = vo1.variation_id
+                LEFT JOIN variation_option as vo2 ON vo2.id = pv.variation_option_2_id
+                    LEFT JOIN variation as v2 ON v2.id = vo2.variation_id
+        `, [id, optionA_id, optionB_id, quantity, charge]);
+
+        res.json({
+            status: 'Success',
+            message: `Product Variation is created`,
+            data: result.rows[0]
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
+
+// == Update Product & Variation ======
+router.put('/products/:id', async (req, res) => {
+    const client = await pool.connect();
+    const { id } = req.params;
+    const {name, description, base_price} = req.body;
+    //category_id
+
+    try {
+        const result = await client.query(`
+            UPDATE product
+                SET name = $2, description = $3, base_price = $4 
+            WHERE id = $1
+            RETURNING *
+        `, [id, name, description, base_price]);
+
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
+
+router.put('/products/:id/variations', async (req, res) => {
+    const client = await pool.connect();
+    const { id } = req.params;
+    const { quantity } = req.body;
+
+    try {
+        const result = await client.query(`
+            UPDATE product_variation
+                SET quantity = $2
+            WHERE id = $1
+            RETURNING *
+        `, [id, quantity]);
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+})
 
 
 

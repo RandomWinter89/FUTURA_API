@@ -110,30 +110,6 @@ router.post('/order/:order_id', async (req, res) => {
 });
 
 // Read 
-router.get('/order/:order_id', async (req, res) => {
-    const client = await pool.connect();
-    const { order_id } = req.params;
-
-    try {
-        const result = await client.query(`
-            SELECT * FROM ordered_item WHERE order_id = $1
-        `, [order_id]);
-
-        res.json({
-            status: 'Success',
-            message: 'Order item found successfully',
-            data: result.rows
-        });
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-});
-
 router.get('/orders', async (req, res) => {
     const client = await pool.connect();
 
@@ -170,6 +146,32 @@ router.get('/orders', async (req, res) => {
         client.release();
     }
 })
+
+router.get('/order/:order_id', async (req, res) => {
+    const client = await pool.connect();
+    const { order_id } = req.params;
+
+    try {
+        const result = await client.query(`
+            SELECT * FROM ordered_item WHERE order_id = $1
+        `, [order_id]);
+
+        res.json({
+            status: 'Success',
+            message: 'Order item found successfully',
+            data: result.rows
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+});
+
+
 
 router.put('/order/:order_id', async (req, res) => {
     const client = await pool.connect();

@@ -12,9 +12,19 @@ router.post('/users/:uid/review', async (req, res) => {
 
     try {
         const result = await client.query(`
-            INSERT INTO user_review (created_by_userid, product_id, created_datetime, comment, rating_value)
-                VALUES ($1, $2, NOW(), $3, $4)
-            RETURNING *
+            WITH inserted as (
+                INSERT INTO user_review (created_by_userid, product_id, created_datetime, comment, rating_value)
+                    VALUES ($1, $2, NOW(), $3, $4)
+                RETURNING *
+            )
+            SELECT 
+                u.username,
+                ur.created_datetime,
+                ur.comment,
+                ur.rating_value,
+                ur.created_by_userid
+            FROM inserted as ur
+                JOIN users as u on u.uid = ur.created_by_userid
         `, [uid, product_id, comment, rating_value]);
 
         res.json({

@@ -87,18 +87,18 @@ router.post('/cart/:cart_id/addProduct', async (req, res) => {
                 vo2.value AS value2,
                 v2.name AS name2
             FROM inserted AS ci
-            JOIN product AS p 
-                ON p.id = ci.product_id
-            JOIN product_variation AS pv
-                ON pv.id = ci.product_variation_id
-            LEFT JOIN variation_option AS vo1
-                ON vo1.id = pv.variation_option_id
-            LEFT JOIN variation AS v1
-                ON v1.id = vo1.variation_id
-            LEFT JOIN variation_option AS vo2
-                ON vo2.id = pv.variation_option_2_id
-            LEFT JOIN variation AS v2
-                ON v2.id = vo2.variation_id;
+                JOIN product AS p 
+                    ON p.id = ci.product_id
+                JOIN product_variation AS pv
+                    ON pv.id = ci.product_variation_id
+                LEFT JOIN variation_option AS vo1
+                    ON vo1.id = pv.variation_option_id
+                LEFT JOIN variation AS v1
+                    ON v1.id = vo1.variation_id
+                LEFT JOIN variation_option AS vo2
+                    ON vo2.id = pv.variation_option_2_id
+                LEFT JOIN variation AS v2
+                    ON v2.id = vo2.variation_id;
         `, [cart_id, product_id, product_variation_id, quantity]);
 
         res.json({

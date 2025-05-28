@@ -46,12 +46,20 @@ router.post('/users/:uid/review', async (req, res) => {
 //Get All Review by UserID
 router.get('/users/:uid/review', async (req, res) => {
     const client = await pool.connect();
-    const { id } = req.params;
+    const { uid } = req.params;
 
     try {
         const result = await client.query(`
-            SELECT * FROM user_review WHERE created_by_userid = $1
-        `, [id]);
+            SELECT 
+                ur.id,
+                p.name as product_name,
+                ur.created_datetime,
+                ur.comment,
+                ur.rating_value
+            FROM user_review as ur
+                LEFT JOIN product as p on p.id = ur.product_id
+            WHERE created_by_userid = $1
+        `, [uid]);
 
         res.json({
             status: 'Success',
@@ -102,9 +110,47 @@ router.get('/products/:id/review', async (req, res) => {
     }
 });
 
+//Update Review by userID and reviewID
+router.put('/users/:uid/review/:review_id', async (req, res) => {
+    const client = await pool.connect();
+    const { uid, review_id } = req.params;
+    const { rating_value, comment } = req.body;
+
+    try {
+        const result = await client.query(`
+            WITH inserted AS (
+                UPDATE user_review 
+                    SET rating_value = $1, comment = $2 
+                        WHERE created_by_userid = $3 AND id = $4
+                RETURNING *
+            )
+            SELECT 
+                ur.id,
+                p.name as product_name,
+                ur.created_datetime,
+                ur.comment,
+                ur.rating_value
+            FROM inserted as ur
+                LEFT JOIN product as p on p.id = ur.product_id
+        `, [rating_value, comment, uid, review_id]);
+
+        res.json({
+            status: 'Success',
+            message: 'Review updated successfully',
+            data: result.rows[0]
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        })
+    } finally {
+        client.release();
+    }
+});
 
 //Delete Review by ProductID and UserID
-router.delete('users/:uid/review/:review_id', async (req, res) => {
+router.delete('/users/:uid/review/:review_id', async (req, res) => {
     const client = await pool.connect();
     const { uid, review_id } = req.params;
 
@@ -118,36 +164,6 @@ router.delete('users/:uid/review/:review_id', async (req, res) => {
         res.json({
             status: 'Success',
             message: 'Review deleted successfully',
-            data: result.rows[0]
-        });
-    } catch (err) {
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: err.message
-        })
-    } finally {
-        client.release();
-    }
-});
-
-
-//Update Review by userID and reviewID
-router.put('users/:uid/review/:review_id', async (req, res) => {
-    const client = await pool.connect();
-    const { uid, review_id } = req.params;
-    const { rating_value, comment } = req.body;
-
-    try {
-        const result = await client.query(`
-            UPDATE user_review 
-                SET rating_value = $1, comment = $2 
-                    WHERE created_by_userid = $3 AND id = $4
-            RETURNING *
-        `, [rating_value, comment, uid, review_id]);
-
-        res.json({
-            status: 'Success',
-            message: 'Review updated successfully',
             data: result.rows[0]
         });
     } catch (err) {

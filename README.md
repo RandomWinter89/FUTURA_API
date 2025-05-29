@@ -43,7 +43,7 @@ CLIENT_URL= INSERT_VALUE_HERE
 + **Local Development** - Run `node index` to generate a local host backend. (Full Experience required frontend activate);
 + **Publish Deployment** - Upload it to GitHub, then navigate to Vercel and select from there.
 
-#### Active Deployment - [Vercel](https://futura-lac.vercel.app/)
+#### Active Deployment - [Vercel](https://futura-api.vercel.app/)
 
 #### Important - This project was created as part of the Sigma School Bootcamp's Module (#4) - the capstone project
 
